@@ -1,6 +1,6 @@
 # Clustering Music into Genres
-# Research for Industrial Projects for Students (RIPS) Hong Kong 2018
-# Industry Sponsor: Tencent
+## Research for Industrial Projects for Students (RIPS) Hong Kong 2018
+## Industry Sponsor: Tencent
 
 This project is part of the RIPS-HK program, and was sponsored by Tencent. The project was a collaborative effort by Gabrielle Ferra (Brown University), Algor Lin (Hong Kong University of Science and Technology), Harrison Huang (Hong Kong University of Science and Technology), and me (UCLA).
 
