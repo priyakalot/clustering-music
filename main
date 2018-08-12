@@ -1,3 +1,8 @@
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn import feature_selection
+from sklearn.feature_selection import SelectKBest, f_regression, f_classif
+
 execfile("music-to-vec.py")
 
 # Import first genre
