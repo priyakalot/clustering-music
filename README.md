@@ -18,3 +18,5 @@ The features we used to define a piece of music are as follows:
 6. Average number of articulations and plays per time step
 7. Number of notes (out of 78) not played
 8. Length of the piece of music
+
+The code was all run on Google Colaboratory (Python 2).
