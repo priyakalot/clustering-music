@@ -1,10 +1,6 @@
 import midi
 import numpy as np
 import itertools
-import pandas as pd
-from sklearn.cluster import KMeans
-from sklearn import feature_selection
-from sklearn.feature_selection import SelectKBest, f_regression, f_classif
 
 # Function to flatten state matrices and/or input form
 
