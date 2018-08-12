@@ -1,0 +1,197 @@
+import midi
+import numpy as np
+import itertools
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn import feature_selection
+from sklearn.feature_selection import SelectKBest, f_regression, f_classif
+
+# Function to flatten state matrices and/or input form
+
+def make_matrix(mat):
+  """
+  Flattens a matrix, mat.
+  """
+  flatten = lambda l: [item for sublist in l for item in sublist]
+  
+  m = []
+  for time in range(len(mat)):
+    m.append(flatten(mat[time]))
+ 
+  return m
+
+def make_final_inputs(sm):
+  """
+  Takes as input a list of statematrices for each song.
+  Ouputs the final inputs for clustering. 
+  """
+  
+  play_prob_vec = []
+
+  for song in range(len(sm)):
+    vec = []
+    for time in range(len(sm[song])):
+      for note in range(len(sm[song][time])):
+        pp = sm[song][time][note][0]
+        vec.append(pp)
+
+    play_prob_vec.append(vec)  
+
+  # Get only articulation probability from each statematrix note and throw it into a vector in order
+  art_prob_vec = []
+
+  for song in range(len(sm)):
+    vec = []
+    for time in range(len(sm[song])):
+      for note in range(len(sm[song][time])):
+        pp = sm[song][time][note][1]
+        vec.append(pp)
+
+    art_prob_vec.append(vec) 
+  
+  
+  # For PLAY
+  number_notes_vec_prob = []
+
+  for song in range(len(play_prob_vec)):
+    new = [0]*78
+
+    for i in range(0, len(play_prob_vec[song]), 78):
+      prob = play_prob_vec[song][i : i+78]
+      new = [x + y for x, y in zip(new, prob)]
+
+    number_notes_vec_prob.append(new)
+
+    
+  # For ART
+  number_notes_vec_art = []
+
+  for song in range(len(art_prob_vec)):
+    new = [0]*78
+
+    for i in range(0, len(art_prob_vec[song]), 78):
+      prob = art_prob_vec[song][i : i+78]
+      new = [x + y for x, y in zip(new, prob)]
+
+    number_notes_vec_art.append(new)
+  
+  
+  # Total number of PLAYS for e/a song
+  vec_prob = []
+  for song in number_notes_vec_prob:
+    vec_prob.append(sum(song))
+
+  # Total number of ARTS for e/a song
+  vec_art = []
+  for song in number_notes_vec_art:
+    vec_art.append(sum(song))
+
+  # Total number of PLAYS and ARTS for e/a song
+  vec_total = [x + y for x, y in zip(vec_prob, vec_art)]
+  
+  # Getting length of each song
+  len_song = []
+  for i in range(len(sm)):
+    len_song.append(len(sm[i]))
+  
+  # Averaging across time steps
+  vec_prob_avg = []
+  for i in range(len(vec_prob)):
+    vec_prob_avg.append(vec_prob[i]/len(sm[i]))
+
+  vec_art_avg = []
+  for i in range(len(vec_art)):
+    vec_art_avg.append(vec_art[i]/len(sm[i]))
+
+  vec_total_avg = []
+  for i in range(len(vec_total)):
+    vec_total_avg.append(vec_total[i]/len(sm[i]))
+    
+  # Getting number of 0s in number_notes_vec_prob
+  zero_count_list = []
+
+  for song in number_notes_vec_prob:
+    zero_counter = 0
+    for note in song:
+      if note == 0:
+        zero_counter += 1
+    zero_count_list.append(zero_counter)
+  
+  # Add all variables into a list
+  final_cluster_input = [number_notes_vec_prob] + [number_notes_vec_art] + \
+  [vec_prob] + [vec_art] + [vec_total] + [vec_prob_avg] + [vec_art_avg] + \
+  [vec_total_avg] + [zero_count_list] + [len_song]
+  
+  return final_cluster_input
+
+def make_final_inputs_vec(final_cluster_input, indices = None, total = True):
+  """
+  Takes as input a list of final cluster inputs along with a list with 1s in
+  the matching indices for the inputs wanted to cluster. Outputs the desired 
+  vector to cluster. 
+  
+  If a list of indices is not given, it assumes you want all of the inputs.
+  """
+  
+  # Initialize the ouput vector
+  cluster_vec = []
+  
+  #flatten = lambda l: [item for sublist in l for item in sublist]
+  
+  # If total == True
+  if indices == None:
+    for i in range(len(final_cluster_input[0])):
+      song = []
+      for j in range(len(final_cluster_input)):
+        if type(final_cluster_input[j][i]) == list:
+          song += final_cluster_input[j][i] 
+        else: song += [final_cluster_input[j][i]]
+      cluster_vec.append(song)
+
+  else:
+    for i in range(len(final_cluster_input[0])):
+      song = []
+      count = 0
+      for j in range(len(indices)):
+        if indices[j] == 0:
+          continue
+        else:
+          if type(final_cluster_input[j][i]) == list:
+            song += final_cluster_input[j][i] 
+          else: 
+            song += [final_cluster_input[j][i]]
+      cluster_vec.append(song)
+
+  return cluster_vec
+
+#### Accuracy functions
+
+# overall correct labels proportion
+def correct(output):
+  n = len(output)
+  count = 0.
+  for i in range(n):
+    if output.genre[i] == output.label_genre[i]:
+      count = count + 1
+  return(count/n)
+
+# overall incorrect labels proportion
+def incorrect(output):
+  n = len(output)
+  count = 0.
+  for i in range(n):
+    if output.genre[i] != output.label_genre[i]:
+      count = count + 1
+  return(count/n)
+    
+
+def get_accuracy_by_genre(output,genre):
+  n = len(output)
+  count = 0.
+  for i in range(n):
+    if output.genre[i] == genre and output.label_genre[i] == genre:
+      count = count + 1
+
+  genre_total = sum(output.genre == genre)
+
+  return(count/genre_total)
